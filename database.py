@@ -1,12 +1,14 @@
 import atexit
+import logging
 import sqlite3
 from pathlib import Path
 
 
 class DatabaseInterface:
     def __init__(self, database_path: Path) -> None:
+        self.logger = logging.getLogger(__name__)
         self.db_path = database_path
-        self.conn: sqlite3.Connection = sqlite3.connect(self.db_path)
+        self.conn = self.__db_conn_init(database_path)
 
         atexit.register(self.__close)
 
@@ -15,6 +17,15 @@ class DatabaseInterface:
 
     def __close(self) -> None:
         self.conn.close()
+
+    def __db_conn_init(self, database_path: Path) -> sqlite3.Connection:
+        if not database_path.exists():
+            self.logger.info(
+                "Requested database '%s' doesn't exist, creating...",
+                database_path,
+            )
+
+        return sqlite3.connect(self.db_path)
 
     def set_x_api_key(self, server_id: str, x_api_key: str) -> None:
         raise NotImplementedError
