@@ -37,3 +37,9 @@ ignore = [
 quote-style = "double"
 indent-style = "space"
 docstring-code-format = true
+
+[tool.mypy]
+strict = true
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
