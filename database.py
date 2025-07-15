@@ -8,12 +8,12 @@ class DatabaseInterface:
         self.db_path = database_path
         self.conn: sqlite3.Connection = sqlite3.connect(self.db_path)
 
-        atexit.register(self.close)
+        atexit.register(self.__close)
 
     def __del__(self) -> None:
-        self.close()
+        self.__close()
 
-    def close(self) -> None:
+    def __close(self) -> None:
         self.conn.close()
 
     def set_x_api_key(self, server_id: str, x_api_key: str) -> None:
