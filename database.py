@@ -20,7 +20,7 @@ class DatabaseInterface:
 
     def __db_conn_init(self, database_path: Path) -> sqlite3.Connection:
         if not database_path.exists():
-            self.logger.info(
+            self.logger.warning(
                 "Requested database '%s' doesn't exist, creating...",
                 database_path,
             )
