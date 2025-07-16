@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import atexit
 import logging
 import sqlite3
@@ -36,8 +38,8 @@ class DatabaseInterface:
     def set_emoji_reaction_threshhold(self, server_id: str, threshhold: int) -> None:
         raise NotImplementedError
 
-    def get_trigger_emoji(self, server_id: str) -> str:
+    def get_trigger_emoji(self, server_id: str) -> str | None:
         raise NotImplementedError
 
-    def get_emoji_reaction_threshhold(self, server_id: str) -> int:
+    def get_emoji_reaction_threshhold(self, server_id: str) -> int | None:
         raise NotImplementedError
