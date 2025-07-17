@@ -3,14 +3,18 @@ from __future__ import annotations
 import atexit
 import logging
 import sqlite3
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class DatabaseInterface:
     def __init__(self, database_path: Path) -> None:
-        self.logger = logging.getLogger(__name__)
         self.db_path = database_path
-        self.conn = self.__db_conn_init(database_path)
+
+        self.__logger = logging.getLogger(__name__)
+        self.__conn = self.__db_conn_init(database_path)
 
         atexit.register(self.__close)
 
@@ -18,11 +22,11 @@ class DatabaseInterface:
         self.__close()
 
     def __close(self) -> None:
-        self.conn.close()
+        self.__conn.close()
 
     def __db_conn_init(self, database_path: Path) -> sqlite3.Connection:
         if not database_path.exists():
-            self.logger.warning(
+            self.__logger.warning(
                 "Requested database '%s' doesn't exist, creating...",
                 database_path,
             )
