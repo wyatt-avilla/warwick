@@ -38,8 +38,18 @@ class DatabaseInterface:
     def set_emoji_reaction_threshhold(self, server_id: str, threshhold: int) -> None:
         raise NotImplementedError
 
+    def set_reaction_observing_timeout_secs(
+        self,
+        server_id: str,
+        timeout_secs: int,
+    ) -> None:
+        raise NotImplementedError
+
     def get_trigger_emoji(self, server_id: str) -> str | None:
         raise NotImplementedError
 
     def get_emoji_reaction_threshhold(self, server_id: str) -> int | None:
+        raise NotImplementedError
+
+    def get_reaction_observing_timeout_secs(self, server_id: str) -> int:
         raise NotImplementedError
