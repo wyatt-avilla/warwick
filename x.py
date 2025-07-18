@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from tweepy import API, OAuth1UserHandler
 from tweepy.asynchronous import AsyncClient
 
-type URL = str
+import media_streaming
+
+if TYPE_CHECKING:
+    from type_aliases import URL
+from typing import TYPE_CHECKING
 
 
 @dataclass
@@ -32,7 +37,7 @@ class Account:
         self,
         *,
         text: str | None = None,
-        media_ids: str | None = None,
+        media_ids: list[str] | None = None,
     ) -> URL:
         response = await self.client.create_tweet(text=text, media_ids=media_ids)
         post_id = response.data["id"]
@@ -57,3 +62,14 @@ class Account:
 
     async def create_text_post(self, text: str) -> URL:
         return await self.__post(text=text)
+
+    async def create_post_with_media(self, text: str | None, media_link: URL) -> URL:
+        api = API(auth=self.__get_oauth_user_handler())
+        mem_file = await media_streaming.bytesio_from_url(media_link)
+        media = api.chunked_upload(
+            media_link.split("/")[-1],
+            file=mem_file,
+            wait_for_async_finalize=True,
+        )
+
+        return await self.__post(text=text, media_ids=[media.media_id_string])
