@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 from tweepy.asynchronous import AsyncClient
 
+type URL = str
+
 
 @dataclass
 class AuthenticationBundle:
@@ -12,7 +14,7 @@ class AuthenticationBundle:
     access_token_secret: str
 
 
-async def create_text_post(auth: AuthenticationBundle, text: str) -> None:
+async def create_text_post(auth: AuthenticationBundle, text: str) -> URL:
     client = AsyncClient(
         bearer_token=auth.bearer_token,
         consumer_key=auth.api_key,
@@ -21,4 +23,9 @@ async def create_text_post(auth: AuthenticationBundle, text: str) -> None:
         access_token_secret=auth.access_token_secret,
     )
 
-    await client.create_tweet(text=text)
+    response = await client.create_tweet(text=text)
+
+    username = (await client.get_me()).data.username
+    post_id = response.data["id"]
+
+    return f"https://x.com/{username}/status/{post_id}"
