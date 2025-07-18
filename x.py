@@ -14,18 +14,27 @@ class AuthenticationBundle:
     access_token_secret: str
 
 
-async def create_text_post(auth: AuthenticationBundle, text: str) -> URL:
-    client = AsyncClient(
-        bearer_token=auth.bearer_token,
-        consumer_key=auth.api_key,
-        consumer_secret=auth.api_key_secret,
-        access_token=auth.access_token,
-        access_token_secret=auth.access_token_secret,
-    )
+class Account:
+    def __init__(self, auth: AuthenticationBundle) -> None:
+        self.client = AsyncClient(
+            bearer_token=auth.bearer_token,
+            consumer_key=auth.api_key,
+            consumer_secret=auth.api_key_secret,
+            access_token=auth.access_token,
+            access_token_secret=auth.access_token_secret,
+        )
 
-    response = await client.create_tweet(text=text)
+    async def get_username(self) -> str:
+        return str((await self.client.get_me()).data.username)
 
-    username = (await client.get_me()).data.username
-    post_id = response.data["id"]
+    async def post_url_from(self, post_id: str) -> URL:
+        username = await self.get_username()
 
-    return f"https://x.com/{username}/status/{post_id}"
+        return f"https://x.com/{username}/status/{post_id}"
+
+    async def create_text_post(self, text: str) -> URL:
+        response = await self.client.create_tweet(text=text)
+
+        post_id = response.data["id"]
+
+        return await self.post_url_from(post_id)
