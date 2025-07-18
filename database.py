@@ -15,7 +15,6 @@ class Column(str, Enum):
     x_api_key = "x_api_key"
     trigger_emoji = "trigger_emoji"
     emoji_reaction_threshhold = "emoji_reaction_threshhold"
-    reaction_observing_timeout_secs = "reaction_observing_timeout_secs"
 
     def __str__(self) -> str:
         return self.value
@@ -54,8 +53,7 @@ class DatabaseInterface:
             {Column.id} TEXT PRIMARY KEY,
             {Column.x_api_key} TEXT,
             {Column.trigger_emoji} TEXT,
-            {Column.emoji_reaction_threshhold} INTEGER,
-            {Column.reaction_observing_timeout_secs} INTEGER DEFAULT {60 * 5}
+            {Column.emoji_reaction_threshhold} INTEGER
         )
         """
         self.__conn.cursor().execute(table_creation_rule)
@@ -92,17 +90,6 @@ class DatabaseInterface:
             str(threshhold),
         )
 
-    def set_reaction_observing_timeout_secs(
-        self,
-        server_id: str,
-        timeout_secs: int,
-    ) -> None:
-        self.__set_column_value(
-            server_id,
-            Column.reaction_observing_timeout_secs,
-            str(timeout_secs),
-        )
-
     def get_trigger_emoji(self, server_id: str) -> str | None:
         return self.__get_column_value(server_id, Column.trigger_emoji)
 
@@ -112,15 +99,3 @@ class DatabaseInterface:
             Column.emoji_reaction_threshhold,
         )
         return int(maybe_threshhold) if maybe_threshhold else None
-
-    def get_reaction_observing_timeout_secs(self, server_id: str) -> int:
-        maybe_timeout = self.__get_column_value(
-            server_id,
-            Column.reaction_observing_timeout_secs,
-        )
-
-        if maybe_timeout is None:
-            e = f"Expected non-null value for column '{Column.reaction_observing_timeout_secs}'"
-            raise ValueError(e)
-
-        return int(maybe_timeout)
