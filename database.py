@@ -6,6 +6,8 @@ import sqlite3
 from enum import Enum
 from typing import TYPE_CHECKING
 
+import x
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -127,3 +129,38 @@ class DatabaseInterface:
             Column.emoji_reaction_threshhold,
         )
         return int(maybe_threshhold) if maybe_threshhold else None
+
+    def get_x_auth_bundle(self, server_id: str) -> x.AuthenticationBundle | None:
+        """Returns None if any of the auth columns are empty"""
+        auth_columns = (
+            Column.x_bearer_token,
+            Column.x_api_key,
+            Column.x_api_key_secret,
+            Column.x_access_token,
+            Column.x_access_token_secret,
+        )
+
+        query = f"""SELECT
+            {",".join(auth_columns)}
+            FROM {self.__table_name} where {Column.id} = ?
+        """  # noqa: S608
+
+        cursor = self.__conn.cursor()
+        cursor.execute(query, (server_id,))
+        result = cursor.fetchone()
+        if result is None or any(x is None for x in result):
+            self.__logger.error(
+                "Requested auth bundle for server '%s' is incomplete",
+                server_id,
+            )
+            return None
+
+        column_values = dict(zip(auth_columns, result))
+
+        return x.AuthenticationBundle(
+            bearer_token=column_values[Column.x_bearer_token],
+            api_key=column_values[Column.x_api_key],
+            api_key_secret=column_values[Column.x_api_key_secret],
+            access_token=column_values[Column.x_access_token],
+            access_token_secret=column_values[Column.x_access_token_secret],
+        )
