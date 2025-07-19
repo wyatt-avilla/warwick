@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -63,13 +64,28 @@ class Account:
     async def create_text_post(self, text: str) -> URL:
         return await self.__post(text=text)
 
-    async def create_post_with_media(self, text: str | None, media_link: URL) -> URL:
+    async def create_post_with_media(
+        self,
+        *,
+        text: str | None,
+        media_links: tuple[URL]
+        | tuple[URL, URL]
+        | tuple[URL, URL, URL]
+        | tuple[URL, URL, URL, URL],
+    ) -> URL:
         api = API(auth=self.__get_oauth_user_handler())
-        mem_file = await media_streaming.bytesio_from_url(media_link)
-        media = api.chunked_upload(
-            media_link.split("/")[-1],
-            file=mem_file,
-            wait_for_async_finalize=True,
+
+        async def process_media_link(media_link: URL) -> str:
+            mem_file = await media_streaming.bytesio_from_url(media_link)
+            media = api.chunked_upload(
+                media_link.split("/")[-1],
+                file=mem_file,
+                wait_for_async_finalize=True,
+            )
+            return str(media.media_id_string)
+
+        media_ids = await asyncio.gather(
+            *[process_media_link(media_link) for media_link in media_links],
         )
 
-        return await self.__post(text=text, media_ids=[media.media_id_string])
+        return await self.__post(text=text, media_ids=media_ids)
