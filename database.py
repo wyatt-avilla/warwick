@@ -155,7 +155,7 @@ class DatabaseInterface:
             )
             return None
 
-        column_values = dict(zip(auth_columns, result))
+        column_values = dict(zip(auth_columns, result, strict=True))
 
         return x.AuthenticationBundle(
             bearer_token=column_values[Column.x_bearer_token],
