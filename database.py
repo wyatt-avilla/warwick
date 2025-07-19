@@ -12,9 +12,13 @@ if TYPE_CHECKING:
 
 class Column(str, Enum):
     id = "id"
-    x_api_key = "x_api_key"
     trigger_emoji = "trigger_emoji"
     emoji_reaction_threshhold = "emoji_reaction_threshhold"
+    x_bearer_token = "x_bearer_token"
+    x_api_key = "x_api_key"
+    x_api_key_secret = "x_api_key_secret"
+    x_access_token = "x_access_token"
+    x_access_token_secret = "x_access_token_secret"
 
     def __str__(self) -> str:
         return self.value
@@ -51,9 +55,13 @@ class DatabaseInterface:
         table_creation_rule = f"""
         CREATE TABLE IF NOT EXISTS {self.__table_name} (
             {Column.id} TEXT PRIMARY KEY,
-            {Column.x_api_key} TEXT,
             {Column.trigger_emoji} TEXT,
-            {Column.emoji_reaction_threshhold} INTEGER
+            {Column.emoji_reaction_threshhold} INTEGER,
+            {Column.x_bearer_token} TEXT,
+            {Column.x_api_key} TEXT,
+            {Column.x_api_key_secret} TEXT,
+            {Column.x_access_token} TEXT,
+            {Column.x_access_token_secret} TEXT
         )
         """
         self.__conn.cursor().execute(table_creation_rule)
@@ -77,9 +85,6 @@ class DatabaseInterface:
         result = cursor.fetchone()
         return result[0] if result else None
 
-    def set_x_api_key(self, server_id: str, x_api_key: str) -> None:
-        self.__set_column_value(server_id, Column.x_api_key, x_api_key)
-
     def set_trigger_emoji(self, server_id: str, trigger_emoji: str) -> None:
         self.__set_column_value(server_id, Column.trigger_emoji, trigger_emoji)
 
@@ -88,6 +93,29 @@ class DatabaseInterface:
             server_id,
             Column.emoji_reaction_threshhold,
             str(threshhold),
+        )
+
+    def set_x_bearer_token(self, server_id: str, x_bearer_token: str) -> None:
+        self.__set_column_value(server_id, Column.x_bearer_token, x_bearer_token)
+
+    def set_x_api_key(self, server_id: str, x_api_key: str) -> None:
+        self.__set_column_value(server_id, Column.x_api_key, x_api_key)
+
+    def set_x_api_key_secret(self, server_id: str, x_api_key_secret: str) -> None:
+        self.__set_column_value(server_id, Column.x_api_key_secret, x_api_key_secret)
+
+    def set_x_access_token(self, server_id: str, x_access_token: str) -> None:
+        self.__set_column_value(server_id, Column.x_access_token, x_access_token)
+
+    def set_x_access_token_secret(
+        self,
+        server_id: str,
+        x_access_token_secret: str,
+    ) -> None:
+        self.__set_column_value(
+            server_id,
+            Column.x_access_token_secret,
+            x_access_token_secret,
         )
 
     def get_trigger_emoji(self, server_id: str) -> str | None:
