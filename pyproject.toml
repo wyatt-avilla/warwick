@@ -36,6 +36,7 @@ ignore = [
     "D",
     "CPY",
     "E501",
+    "S105",
 ]
 
 [tool.ruff.format]
