@@ -13,6 +13,8 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "discord.py>=2.5.0",
+	"tweepy[async]>=4.16.0",
+	"aiohttp>=3.12.14",
 ]
 
 [project.optional-dependencies]
@@ -26,7 +28,6 @@ py-modules = []
 
 [tool.ruff]
 line-length = 88
-target-version = "py38"
 
 [tool.ruff.lint]
 select = [ "ALL" ]
@@ -34,6 +35,7 @@ ignore = [
     "D",
     "CPY",
     "E501",
+    "S105",
 ]
 
 [tool.ruff.format]
@@ -46,3 +48,4 @@ strict = true
 python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
+ignore_missing_imports = true
