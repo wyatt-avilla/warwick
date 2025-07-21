@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import atexit
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import aiosqlite
 
@@ -11,6 +10,7 @@ import x
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from types import TracebackType
 
 
 class Column(str, Enum):
@@ -79,6 +79,20 @@ class DatabaseInterface:
         await db_connection.commit()
 
         await cursor.close()
+
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        await self.__close()
+
+    async def __close(self) -> None:
+        await self.__conn.close()
 
     async def __set_column_value(self, server_id: str, col: Column, val: str) -> None:
         query = f"""
