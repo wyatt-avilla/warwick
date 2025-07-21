@@ -28,15 +28,23 @@ class Column(str, Enum):
 
 
 class DatabaseInterface:
-    db_path: Path
+    __db_path: Path
     __logger: logging.Logger
     __conn: aiosqlite.Connection
     __table_name: str
 
+    @property
+    def table_name(self) -> str:
+        return self.__table_name
+
+    @property
+    def database_file(self) -> Path:
+        return self.__db_path
+
     @staticmethod
     async def new(database_path: Path) -> DatabaseInterface:
         db = DatabaseInterface()
-        db.db_path = database_path
+        db.__db_path = database_path
         db.__logger = logging.getLogger(__name__)
         db.__conn = await DatabaseInterface.__db_conn_init(database_path, db.__logger)
         db.__table_name = "server_configs"
