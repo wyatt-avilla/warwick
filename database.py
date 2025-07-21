@@ -66,8 +66,12 @@ class DatabaseInterface:
             {Column.x_access_token_secret} TEXT
         )
         """
-        self.__conn.cursor().execute(table_creation_rule)
+        cursor = self.__conn.cursor()
+
+        cursor.execute(table_creation_rule)
         self.__conn.commit()
+
+        cursor.close()
 
     def __set_column_value(self, server_id: str, col: Column, val: str) -> None:
         query = f"""
@@ -76,8 +80,12 @@ class DatabaseInterface:
             ON CONFLICT({Column.id}) DO UPDATE SET
                 {col} = excluded.{col}
         """  # noqa: S608
-        self.__conn.cursor().execute(query, (server_id, val))
+        cursor = self.__conn.cursor()
+
+        cursor.execute(query, (server_id, val))
         self.__conn.commit()
+
+        cursor.close()
 
     def __get_column_value(self, server_id: str, col: Column) -> str | None:
         query = f"SELECT {col} from {self.__table_name} where {Column.id} = ?"  # noqa: S608
@@ -85,6 +93,8 @@ class DatabaseInterface:
         cursor.execute(query, (server_id,))
 
         result = cursor.fetchone()
+
+        cursor.close()
         return result[0] if result else None
 
     def set_trigger_emoji(self, server_id: str, trigger_emoji: str) -> None:
@@ -146,6 +156,7 @@ class DatabaseInterface:
         """  # noqa: S608
 
         cursor = self.__conn.cursor()
+
         cursor.execute(query, (server_id,))
         result = cursor.fetchone()
         if result is None or any(x is None for x in result):
@@ -157,6 +168,7 @@ class DatabaseInterface:
 
         column_values = dict(zip(auth_columns, result, strict=True))
 
+        cursor.close()
         return x.AuthenticationBundle(
             bearer_token=column_values[Column.x_bearer_token],
             api_key=column_values[Column.x_api_key],
