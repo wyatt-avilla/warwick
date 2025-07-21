@@ -28,35 +28,41 @@ class Column(str, Enum):
 
 
 class DatabaseInterface:
-    def __init__(self, database_path: Path) -> None:
-        self.db_path = database_path
+    db_path: Path
+    __logger: logging.Logger
+    __conn: aiosqlite.Connection
+    __table_name: str
 
-        self.__logger = logging.getLogger(__name__)
-        self.__conn = await self.__db_conn_init(database_path)
-        self.__table_name = "server_configs"
+    @staticmethod
+    async def new(database_path: Path) -> DatabaseInterface:
+        db = DatabaseInterface()
+        db.db_path = database_path
+        db.__logger = logging.getLogger(__name__)
+        db.__conn = await DatabaseInterface.__db_conn_init(database_path, db.__logger)
+        db.__table_name = "server_configs"
 
-        await self.__create_table_if_needed()
+        return db
 
-        atexit.register(self.__close)
-
-    async def __del__(self) -> None:
-        await self.__close()
-
-    async def __close(self) -> None:
-        await self.__conn.close()
-
-    async def __db_conn_init(self, database_path: Path) -> aiosqlite.Connection:
+    @staticmethod
+    async def __db_conn_init(
+        database_path: Path,
+        logger: logging.Logger,
+    ) -> aiosqlite.Connection:
         if not database_path.exists():
-            self.__logger.warning(
+            logger.warning(
                 "Requested database '%s' doesn't exist, creating...",
                 database_path,
             )
 
-        return await aiosqlite.connect(self.db_path)
+        return await aiosqlite.connect(database_path)
 
-    async def __create_table_if_needed(self) -> None:
+    @staticmethod
+    async def __create_table_if_needed(
+        db_connection: aiosqlite.Connection,
+        table_name: str,
+    ) -> None:
         table_creation_rule = f"""
-        CREATE TABLE IF NOT EXISTS {self.__table_name} (
+        CREATE TABLE IF NOT EXISTS {table_name} (
             {Column.id} TEXT PRIMARY KEY,
             {Column.trigger_emoji} TEXT,
             {Column.emoji_reaction_threshhold} INTEGER,
@@ -67,10 +73,10 @@ class DatabaseInterface:
             {Column.x_access_token_secret} TEXT
         )
         """
-        cursor = await self.__conn.cursor()
+        cursor = await db_connection.cursor()
 
         await cursor.execute(table_creation_rule)
-        await self.__conn.commit()
+        await db_connection.commit()
 
         await cursor.close()
 
