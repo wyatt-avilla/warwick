@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import atexit
 import logging
-import sqlite3
 from enum import Enum
 from typing import TYPE_CHECKING
+
+import aiosqlite
 
 import x
 
@@ -31,29 +32,29 @@ class DatabaseInterface:
         self.db_path = database_path
 
         self.__logger = logging.getLogger(__name__)
-        self.__conn = self.__db_conn_init(database_path)
+        self.__conn = await self.__db_conn_init(database_path)
         self.__table_name = "server_configs"
 
-        self.__create_table_if_needed()
+        await self.__create_table_if_needed()
 
         atexit.register(self.__close)
 
-    def __del__(self) -> None:
-        self.__close()
+    async def __del__(self) -> None:
+        await self.__close()
 
-    def __close(self) -> None:
-        self.__conn.close()
+    async def __close(self) -> None:
+        await self.__conn.close()
 
-    def __db_conn_init(self, database_path: Path) -> sqlite3.Connection:
+    async def __db_conn_init(self, database_path: Path) -> aiosqlite.Connection:
         if not database_path.exists():
             self.__logger.warning(
                 "Requested database '%s' doesn't exist, creating...",
                 database_path,
             )
 
-        return sqlite3.connect(self.db_path)
+        return await aiosqlite.connect(self.db_path)
 
-    def __create_table_if_needed(self) -> None:
+    async def __create_table_if_needed(self) -> None:
         table_creation_rule = f"""
         CREATE TABLE IF NOT EXISTS {self.__table_name} (
             {Column.id} TEXT PRIMARY KEY,
@@ -66,81 +67,89 @@ class DatabaseInterface:
             {Column.x_access_token_secret} TEXT
         )
         """
-        cursor = self.__conn.cursor()
+        cursor = await self.__conn.cursor()
 
-        cursor.execute(table_creation_rule)
-        self.__conn.commit()
+        await cursor.execute(table_creation_rule)
+        await self.__conn.commit()
 
-        cursor.close()
+        await cursor.close()
 
-    def __set_column_value(self, server_id: str, col: Column, val: str) -> None:
+    async def __set_column_value(self, server_id: str, col: Column, val: str) -> None:
         query = f"""
             INSERT INTO {self.__table_name} ({Column.id}, {col})
             VALUES (?, ?)
             ON CONFLICT({Column.id}) DO UPDATE SET
                 {col} = excluded.{col}
         """  # noqa: S608
-        cursor = self.__conn.cursor()
+        cursor = await self.__conn.cursor()
 
-        cursor.execute(query, (server_id, val))
-        self.__conn.commit()
+        await cursor.execute(query, (server_id, val))
+        await self.__conn.commit()
 
-        cursor.close()
+        await cursor.close()
 
-    def __get_column_value(self, server_id: str, col: Column) -> str | None:
+    async def __get_column_value(self, server_id: str, col: Column) -> str | None:
         query = f"SELECT {col} from {self.__table_name} where {Column.id} = ?"  # noqa: S608
-        cursor = self.__conn.cursor()
-        cursor.execute(query, (server_id,))
+        cursor = await self.__conn.cursor()
+        await cursor.execute(query, (server_id,))
 
-        result = cursor.fetchone()
+        result = await cursor.fetchone()
 
-        cursor.close()
+        await cursor.close()
         return result[0] if result else None
 
-    def set_trigger_emoji(self, server_id: str, trigger_emoji: str) -> None:
-        self.__set_column_value(server_id, Column.trigger_emoji, trigger_emoji)
+    async def set_trigger_emoji(self, server_id: str, trigger_emoji: str) -> None:
+        await self.__set_column_value(server_id, Column.trigger_emoji, trigger_emoji)
 
-    def set_emoji_reaction_threshhold(self, server_id: str, threshhold: int) -> None:
-        self.__set_column_value(
+    async def set_emoji_reaction_threshhold(
+        self,
+        server_id: str,
+        threshhold: int,
+    ) -> None:
+        await self.__set_column_value(
             server_id,
             Column.emoji_reaction_threshhold,
             str(threshhold),
         )
 
-    def set_x_bearer_token(self, server_id: str, x_bearer_token: str) -> None:
-        self.__set_column_value(server_id, Column.x_bearer_token, x_bearer_token)
+    async def set_x_bearer_token(self, server_id: str, x_bearer_token: str) -> None:
+        await self.__set_column_value(server_id, Column.x_bearer_token, x_bearer_token)
 
-    def set_x_api_key(self, server_id: str, x_api_key: str) -> None:
-        self.__set_column_value(server_id, Column.x_api_key, x_api_key)
+    async def set_x_api_key(self, server_id: str, x_api_key: str) -> None:
+        await self.__set_column_value(server_id, Column.x_api_key, x_api_key)
 
-    def set_x_api_key_secret(self, server_id: str, x_api_key_secret: str) -> None:
-        self.__set_column_value(server_id, Column.x_api_key_secret, x_api_key_secret)
+    async def set_x_api_key_secret(self, server_id: str, x_api_key_secret: str) -> None:
+        await self.__set_column_value(
+            server_id,
+            Column.x_api_key_secret,
+            x_api_key_secret,
+        )
 
-    def set_x_access_token(self, server_id: str, x_access_token: str) -> None:
-        self.__set_column_value(server_id, Column.x_access_token, x_access_token)
+    async def set_x_access_token(self, server_id: str, x_access_token: str) -> None:
+        await self.__set_column_value(server_id, Column.x_access_token, x_access_token)
 
-    def set_x_access_token_secret(
+    async def set_x_access_token_secret(
         self,
         server_id: str,
         x_access_token_secret: str,
     ) -> None:
-        self.__set_column_value(
+        await self.__set_column_value(
             server_id,
             Column.x_access_token_secret,
             x_access_token_secret,
         )
 
-    def get_trigger_emoji(self, server_id: str) -> str | None:
-        return self.__get_column_value(server_id, Column.trigger_emoji)
+    async def get_trigger_emoji(self, server_id: str) -> str | None:
+        return await self.__get_column_value(server_id, Column.trigger_emoji)
 
-    def get_emoji_reaction_threshhold(self, server_id: str) -> int | None:
-        maybe_threshhold = self.__get_column_value(
+    async def get_emoji_reaction_threshhold(self, server_id: str) -> int | None:
+        maybe_threshhold = await self.__get_column_value(
             server_id,
             Column.emoji_reaction_threshhold,
         )
         return int(maybe_threshhold) if maybe_threshhold else None
 
-    def get_x_auth_bundle(self, server_id: str) -> x.AuthenticationBundle | None:
+    async def get_x_auth_bundle(self, server_id: str) -> x.AuthenticationBundle | None:
         """Returns None if any of the auth columns are empty"""
         auth_columns = (
             Column.x_bearer_token,
@@ -155,10 +164,10 @@ class DatabaseInterface:
             FROM {self.__table_name} where {Column.id} = ?
         """  # noqa: S608
 
-        cursor = self.__conn.cursor()
+        cursor = await self.__conn.cursor()
 
-        cursor.execute(query, (server_id,))
-        result = cursor.fetchone()
+        await cursor.execute(query, (server_id,))
+        result = await cursor.fetchone()
         if result is None or any(x is None for x in result):
             self.__logger.error(
                 "Requested auth bundle for server '%s' is incomplete",
@@ -168,7 +177,7 @@ class DatabaseInterface:
 
         column_values = dict(zip(auth_columns, result, strict=True))
 
-        cursor.close()
+        await cursor.close()
         return x.AuthenticationBundle(
             bearer_token=column_values[Column.x_bearer_token],
             api_key=column_values[Column.x_api_key],
